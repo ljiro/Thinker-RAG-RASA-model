@@ -1,10 +1,19 @@
 version: "3.1"
 
 rules:
-
 - rule: Activate on session start
   steps:
   - action: action_session_start
+
+- rule: Search knowledge base (HIGH PRIORITY)
+  steps:
+  - intent: search_knowledge
+  - action: action_search_knowledge
+
+- rule: Handle general questions
+  steps:
+  - intent: ask_question
+  - action: action_search_knowledge
 
 - rule: Say goodbye anytime the user says goodbye
   steps:
@@ -46,17 +55,12 @@ rules:
   - intent: out_of_scope
   - action: utter_out_of_scope
 
-- rule: Main RAG search functionality
-  steps:
-  - intent: search_knowledge
-  - action: action_search_knowledge
-
-- rule: Handle general questions
-  steps:
-  - intent: ask_question
-  - action: action_search_knowledge
-
 - rule: Fallback for unclear messages
   steps:
   - intent: nlu_fallback
   - action: action_fallback
+
+- rule: Show capabilities
+  steps:
+  - intent: show_capabilities
+  - action: action_show_capabilities

@@ -7,22 +7,33 @@ from rasa_sdk.types import DomainDict
 import sys
 import os
 import logging
+import time
+from datetime import datetime
 
 # Add the actions directory to the path so we can import our rag_pipeline
 sys.path.append(os.path.dirname(__file__))
 
 # Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("actions.log"),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 try:
     from rag_pipeline import rag_pipeline
     RAG_AVAILABLE = True
-    logger.info("RAG pipeline imported successfully")
+    logger.info("✅ RAG pipeline imported successfully")
+    logger.info(f"📊 Knowledge base contains {len(rag_pipeline.documents)} documents")
 except ImportError as e:
-    logger.error(f"Failed to import RAG pipeline: {e}")
+    logger.error(f"❌ Failed to import RAG pipeline: {e}")
     RAG_AVAILABLE = False
 except Exception as e:
-    logger.error(f"Error initializing RAG pipeline: {e}")
+    logger.error(f"❌ Error initializing RAG pipeline: {e}")
     RAG_AVAILABLE = False
 
 
@@ -36,24 +47,37 @@ class ActionSessionStart(Action):
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: DomainDict
     ) -> List[EventType]:
         
-        # Send welcome message
-        dispatcher.utter_message(
-            text="Hello! I'm your AI assistant with access to a knowledge base. " \
-                 "You can ask me questions about the documents in my knowledge base."
-        )
+        # Enhanced welcome message
+        welcome_message = """🤖 Hello! I'm your AI assistant with access to a comprehensive knowledge base. 
+
+I can help you with:
+• Answering questions based on my document collection
+• Providing detailed explanations on various topics
+• Searching through my knowledge base for specific information
+
+You can ask me complex questions, and I'll provide thorough answers with source references!"""
+
+        dispatcher.utter_message(text=welcome_message)
         
         # Check if RAG system is available
         if not RAG_AVAILABLE:
             dispatcher.utter_message(
-                text="Note: My knowledge base system is currently unavailable. " \
+                text="⚠️ Note: My knowledge base system is currently unavailable. " \
                      "I'll only be able to answer basic questions."
             )
+        else:
+            # Show knowledge base status
+            doc_count = len(rag_pipeline.documents)
+            status_msg = f"📚 My knowledge base is ready with {doc_count} document chunks."
+            if doc_count == 0:
+                status_msg += "\n💡 Use 'add documents' to learn how to add content to my knowledge base."
+            dispatcher.utter_message(text=status_msg)
 
         return [SessionStarted(), ActionExecuted("action_listen")]
 
 
 class ActionSearchKnowledge(Action):
-    """Main action for searching the knowledge base using RAG."""
+    """Enhanced action for searching the knowledge base using RAG with detailed responses."""
     
     def name(self) -> Text:
         return "action_search_knowledge"
@@ -65,11 +89,13 @@ class ActionSearchKnowledge(Action):
         domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
         
+        start_time = time.time()
+        
         # Check if RAG system is available
         if not RAG_AVAILABLE:
             dispatcher.utter_message(
-                text="I'm sorry, but my knowledge search system is currently unavailable. " \
-                     "Please make sure the action server is running properly."
+                text="❌ I'm sorry, but my knowledge search system is currently unavailable. " \
+                     "Please make sure the action server is running properly and check the logs for errors."
             )
             return []
         
@@ -78,7 +104,7 @@ class ActionSearchKnowledge(Action):
         
         if not user_message:
             dispatcher.utter_message(
-                text="I didn't receive your question. Please try asking again."
+                text="❌ I didn't receive your question. Please try asking again."
             )
             return []
 
@@ -86,49 +112,56 @@ class ActionSearchKnowledge(Action):
         question_entity = next(tracker.get_latest_entity_values("question"), None)
         search_query = question_entity or user_message
         
-        logger.info(f"Processing search query: {search_query}")
+        logger.info(f"🔍 Processing search query: '{search_query}'")
         
         try:
-            # Show typing indicator (simulated)
-            dispatcher.utter_message(response="utter_searching")
+            # Show searching message
+            dispatcher.utter_message(text="🔍 Searching my knowledge base for relevant information...")
             
             # Search for relevant information in the knowledge base
             similar_docs = rag_pipeline.search_similar(search_query, n_results=3)
             
             if similar_docs:
+                logger.info(f"✅ Found {len(similar_docs)} relevant documents")
+                
                 # Generate response using RAG
-                logger.info(f"Found {len(similar_docs)} relevant documents, generating response...")
+                logger.info("🤖 Generating response...")
                 response = rag_pipeline.generate_response(search_query, similar_docs)
                 
                 # Add source information
                 sources = list(set([doc['source'] for doc in similar_docs]))
-                source_info = f"\n\n📚 Sources: {', '.join([os.path.basename(src) for src in sources])}"
+                source_files = [os.path.basename(src) for src in sources]
                 
-                full_response = response + source_info
+                # Calculate processing time
+                processing_time = time.time() - start_time
+                
+                # Create the FULL response with answer AND sources
+                full_response = f"{response}\n\n"
+                full_response += f"📚 **Sources**: {', '.join(source_files)}\n"
+                full_response += f"⏱️ **Processing time**: {processing_time:.2f}s"
+                
+                # Send the complete response
                 dispatcher.utter_message(text=full_response)
                 
+                logger.info(f"✅ Successfully generated response in {processing_time:.2f}s")
+                
             else:
-                logger.info("No relevant documents found")
+                logger.info(f"❌ No relevant documents found for: '{search_query}'")
                 dispatcher.utter_message(
-                    text="I couldn't find relevant information in my knowledge base to answer your question. " \
-                         "Please try:\n" \
-                         "• Rephrasing your question\n" \
-                         "• Using different keywords\n" \
-                         "• Adding more relevant documents to the knowledge base"
+                    text=f"❌ I couldn't find relevant information about '{search_query}' in my knowledge base."
                 )
                 
         except Exception as e:
-            logger.error(f"Error in action_search_knowledge: {str(e)}", exc_info=True)
+            logger.error(f"❌ Error in action_search_knowledge: {str(e)}", exc_info=True)
             dispatcher.utter_message(
-                text="I encountered an error while searching for information. " \
-                     "Please try again in a moment."
+                text=f"❌ I encountered an error while searching for information about '{search_query}'. Please try again."
             )
         
-        return [SlotSet("search_query", search_query)]
+        return [SlotSet("search_query", search_query), SlotSet("last_search_time", datetime.now().isoformat())]
 
 
 class ActionAddDocument(Action):
-    """Action to provide information about adding documents to the knowledge base."""
+    """Enhanced action to provide detailed information about adding documents."""
     
     def name(self) -> Text:
         return "action_add_document"
@@ -141,26 +174,49 @@ class ActionAddDocument(Action):
     ) -> List[Dict[Text, Any]]:
         
         instructions = """
-To add documents to my knowledge base:
+📥 **How to Add Documents to My Knowledge Base**
 
-1. Place your documents (PDF, TXT, or DOCX files) in the 'knowledge_base/documents/' folder
-2. Run the setup script: `python setup_knowledge_base.py`
-3. Restart the action server
+**Step-by-Step Guide:**
 
-Supported formats:
-• PDF files (.pdf)
-• Text files (.txt) 
-• Word documents (.docx)
+1. **Prepare Your Documents**
+   • Supported formats: PDF, TXT, DOCX
+   • Place files in: `knowledge_base/documents/` folder
 
-After adding documents, I'll be able to answer questions based on their content!
+2. **Add Documents**
+   • Copy your files to the documents folder
+   • Run: `python setup_knowledge_base.py`
+   • Restart the action server: `rasa run actions`
+
+3. **Verification**
+   • Use: `check knowledge base` to confirm documents were added
+   • Test by asking questions about the new content
+
+**Best Practices:**
+• Use clear, well-structured documents for best results
+• Documents should be text-heavy (not image-based PDFs)
+• Ideal document size: 1-50 pages
+• Remove sensitive information before adding
+
+**Current Knowledge Base Status:**
 """
+        
+        # Add current status
+        if RAG_AVAILABLE:
+            doc_count = len(rag_pipeline.documents)
+            instructions += f"• Documents indexed: {doc_count}\n"
+            if doc_count == 0:
+                instructions += "• ⚠️ No documents currently in knowledge base\n"
+        else:
+            instructions += "• ❌ Knowledge base unavailable\n"
+        
+        instructions += "\nReady to expand my knowledge! 🚀"
 
         dispatcher.utter_message(text=instructions)
         return []
 
 
 class ActionCheckKnowledgeBase(Action):
-    """Action to check the status of the knowledge base."""
+    """Enhanced action to check the detailed status of the knowledge base."""
     
     def name(self) -> Text:
         return "action_check_knowledge_base"
@@ -174,53 +230,46 @@ class ActionCheckKnowledgeBase(Action):
         
         if not RAG_AVAILABLE:
             dispatcher.utter_message(
-                text="My knowledge base system is currently unavailable."
+                text="❌ My knowledge base system is currently unavailable. Please check the action server logs."
             )
             return []
         
         try:
             total_documents = len(rag_pipeline.documents)
-            status_message = f"📊 Knowledge Base Status:\n"
-            status_message += f"• Documents indexed: {total_documents}\n"
-            status_message += f"• Search system: ✅ Operational\n"
-            status_message += f"• LLM: ✅ Ready\n"
+            unique_sources = len(set([doc['source'] for doc in rag_pipeline.metadata]))
             
-            if total_documents == 0:
-                status_message += "\n⚠️ No documents in knowledge base. Use 'add documents' to get started."
+            status_message = "📊 **Knowledge Base Detailed Status**\n\n"
+            status_message += f"• **Documents indexed**: {total_documents} chunks\n"
+            status_message += f"• **Unique source files**: {unique_sources}\n"
+            status_message += f"• **Search system**: ✅ Operational\n"
+            status_message += f"• **Response generation**: ✅ Active\n"
+            status_message += f"• **Running on**: CPU (Stable)\n"
+            status_message += f"• **Last update**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            
+            if total_documents > 0:
+                # Show some sample sources
+                sample_sources = list(set([os.path.basename(doc['source']) for doc in rag_pipeline.metadata[:5]]))
+                status_message += f"• **Sample documents**: {', '.join(sample_sources)}\n"
+                
+                if total_documents > 5:
+                    status_message += f"• **And {total_documents - 5} more chunks...**\n"
+            else:
+                status_message += "\n⚠️ **No documents in knowledge base**\n"
+                status_message += "Use 'add documents' to get started and expand my knowledge!"
             
             dispatcher.utter_message(text=status_message)
             
         except Exception as e:
-            logger.error(f"Error checking knowledge base: {e}")
+            logger.error(f"❌ Error checking knowledge base: {e}")
             dispatcher.utter_message(
-                text="Unable to check knowledge base status at the moment."
+                text="❌ Unable to check knowledge base status at the moment. Please try again later."
             )
         
         return []
 
 
-class ActionFallback(Action):
-    """Fallback action when the user's intent isn't clear."""
-    
-    def name(self) -> Text:
-        return "action_fallback"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
-        
-        dispatcher.utter_message(
-            text="I'm not sure I understand. You can ask me questions about the documents in my knowledge base, " \
-                 "or try rephrasing your question."
-        )
-        return []
-
-
 class ActionProvideHelp(Action):
-    """Action to provide help information to the user."""
+    """Enhanced action to provide comprehensive help information."""
     
     def name(self) -> Text:
         return "action_provide_help"
@@ -233,31 +282,129 @@ class ActionProvideHelp(Action):
     ) -> List[Dict[Text, Any]]:
         
         help_text = """
-🤖 How to use me:
+🤖 **Comprehensive Help Guide**
 
-**Ask Questions**: I can answer questions based on the documents in my knowledge base
-• "What is machine learning?"
-• "Explain neural networks"
-• "Tell me about artificial intelligence"
+**How to Use Me Effectively:**
 
-**Knowledge Base Management**:
-• "Check knowledge base" - See current status
-• "Add documents" - Learn how to add more documents
+🎯 **Ask Detailed Questions**
+• "Explain machine learning algorithms in detail"
+• "What are the key principles of project management?"
+• "Describe the process of neural network training"
+• "Compare and contrast different AI approaches"
 
-**Examples**:
-• "What are the main types of AI?"
-• "Can you explain deep learning?"
-• "Search for information about transformers"
+📚 **Knowledge Base Management**
+• "Check knowledge base" - See detailed status
+• "Add documents" - Learn how to expand my knowledge
+• "Search for [topic]" - Direct knowledge base search
 
-Just ask me anything about the topics in my knowledge base!
+🔍 **Advanced Usage**
+• I can handle complex, multi-part questions
+• I provide detailed answers with source references
+• I can explain concepts from my knowledge base thoroughly
+• I include processing metadata in responses
+
+💡 **Example Questions:**
+• "What are the main types of artificial intelligence and their applications?"
+• "Explain how deep learning differs from traditional machine learning"
+• "Describe the key features of effective leadership according to my documents"
+
+📊 **System Information:**
 """
+        
+        # Add system status
+        if RAG_AVAILABLE:
+            doc_count = len(rag_pipeline.documents)
+            help_text += f"• Knowledge base: {doc_count} document chunks ready\n"
+            help_text += "• Response style: Detailed and comprehensive\n"
+            help_text += "• Source citation: Enabled\n"
+        else:
+            help_text += "• Knowledge base: ❌ Unavailable\n"
+        
+        help_text += "\nI'm ready to provide detailed, well-sourced answers! 🚀"
 
         dispatcher.utter_message(text=help_text)
         return []
 
 
-class ActionSearchingIndicator(Action):
-    """Action to show that the system is searching (typing indicator)."""
+class ActionFallback(Action):
+    """Enhanced fallback action with helpful guidance."""
+    
+    def name(self) -> Text:
+        return "action_fallback"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+        
+        fallback_text = """
+❓ I'm not quite sure what you're asking.
+
+💡 **Here's how I can help you:**
+
+• Ask detailed questions about topics in my knowledge base
+• Request explanations of complex concepts
+• Search for specific information across my documents
+• Check what documents I have available
+• Learn how to add more content to my knowledge base
+
+🔍 **Try asking something like:**
+• "Explain artificial intelligence in detail"
+• "What do you know about machine learning?"
+• "Search for information about neural networks"
+• "Check knowledge base status"
+
+Or simply tell me what topic you're interested in!"""
+
+        dispatcher.utter_message(text=fallback_text)
+        return []
+
+
+class ActionShowCapabilities(Action):
+    """Action to showcase system capabilities."""
+    
+    def name(self) -> Text:
+        return "action_show_capabilities"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+        
+        capabilities = """
+🚀 **My Enhanced Capabilities**
+
+**Advanced RAG System:**
+• 📚 Document understanding and retrieval
+• 🤖 AI-powered response generation
+• 🔍 Semantic search across knowledge base
+• 📊 Source citation and relevance scoring
+
+**What I Can Do:**
+• Answer complex, detailed questions
+• Provide comprehensive explanations
+• Search through multiple documents simultaneously
+• Generate well-structured, informative responses
+• Handle technical and conceptual questions
+
+**Knowledge Features:**
+• Multi-document comprehension
+• Context-aware responses
+• Detailed source referencing
+• Processing time optimization
+
+Ready to tackle your challenging questions! 💪"""
+
+        dispatcher.utter_message(text=capabilities)
+        return []
+
+
+class ActionShowSearching(Action):
+    """Action to show that the system is searching."""
     
     def name(self) -> Text:
         return "action_show_searching"
@@ -269,6 +416,33 @@ class ActionSearchingIndicator(Action):
         domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
         
-        # This would typically trigger a typing indicator in UI integrations
-        # For text interface, we can send a temporary message or just wait
+        # This action can be used to show typing indicators in UI integrations
+        # For text interface, we handle this in the main search action
+        return []
+    
+class ActionDebugIntent(Action):
+    """Debug action to see what intent is being detected"""
+    
+    def name(self) -> Text:
+        return "action_debug_intent"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+        
+        latest_intent = tracker.latest_message.get('intent', {}).get('name')
+        entities = tracker.latest_message.get('entities', [])
+        text = tracker.latest_message.get('text', '')
+        
+        debug_msg = f"""
+🔍 **Debug Information:**
+• **User said**: "{text}"
+• **Detected intent**: "{latest_intent}"
+• **Entities**: {entities}
+"""
+        
+        dispatcher.utter_message(text=debug_msg)
         return []

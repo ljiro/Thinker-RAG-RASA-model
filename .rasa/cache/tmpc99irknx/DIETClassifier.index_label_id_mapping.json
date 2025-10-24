@@ -1,0 +1,15 @@
+{
+  "0": "add_documents",
+  "1": "ask_question",
+  "2": "bot_challenge",
+  "3": "check_knowledge_base",
+  "4": "goodbye",
+  "5": "greet",
+  "6": "help",
+  "7": "nlu_fallback",
+  "8": "out_of_scope",
+  "9": "restart",
+  "10": "search_knowledge",
+  "11": "show_capabilities",
+  "12": "thankyou"
+}

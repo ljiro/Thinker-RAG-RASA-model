@@ -1,0 +1,62 @@
+{
+  "type": "MaxHistoryTrackerFeaturizer",
+  "state_featurizer": {
+    "action_texts": [],
+    "entity_tag_specs": [],
+    "feature_states": {
+      "intent": {
+        "add_documents": 0,
+        "ask_question": 1,
+        "back": 2,
+        "bot_challenge": 3,
+        "check_knowledge_base": 4,
+        "goodbye": 5,
+        "greet": 6,
+        "help": 7,
+        "nlu_fallback": 8,
+        "out_of_scope": 9,
+        "restart": 10,
+        "search_knowledge": 11,
+        "session_start": 12,
+        "show_capabilities": 13,
+        "thankyou": 14
+      },
+      "action_name": {
+        "action_listen": 0,
+        "action_restart": 1,
+        "action_session_start": 2,
+        "action_default_fallback": 3,
+        "action_deactivate_loop": 4,
+        "action_revert_fallback_events": 5,
+        "action_default_ask_affirmation": 6,
+        "action_default_ask_rephrase": 7,
+        "action_two_stage_fallback": 8,
+        "action_unlikely_intent": 9,
+        "action_back": 10,
+        "...": 11,
+        "action_extract_slots": 12,
+        "action_search_knowledge": 13,
+        "action_add_document": 14,
+        "action_check_knowledge_base": 15,
+        "action_provide_help": 16,
+        "action_fallback": 17,
+        "action_show_capabilities": 18,
+        "utter_default": 19,
+        "utter_goodbye": 20,
+        "utter_greet": 21,
+        "utter_help": 22,
+        "utter_iamabot": 23,
+        "utter_out_of_scope": 24,
+        "utter_searching": 25,
+        "utter_thankyou": 26
+      },
+      "entities": {
+        "question": 0
+      },
+      "slots": {},
+      "active_loop": {}
+    }
+  },
+  "remove_duplicates": true,
+  "max_history": 5
+}

@@ -6,6 +6,14 @@ intents:
   - bot_challenge
   - ask_question
   - search_knowledge
+  - help
+  - check_knowledge_base
+  - add_documents
+  - thankyou
+  - out_of_scope
+  - nlu_fallback
+  - restart
+  - show_capabilities
 
 entities:
   - question
@@ -16,21 +24,45 @@ slots:
     influence_conversation: false
     mappings:
     - type: from_text
+  last_search_time:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: custom
 
 responses:
   utter_greet:
-  - text: "Hello! How can I help you today?"
-  - text: "Hi there! What would you like to know?"
+  - text: "Hello! I'm your AI assistant with access to a comprehensive knowledge base. How can I help you today?"
 
   utter_goodbye:
   - text: "Goodbye! Feel free to ask if you have more questions."
-  - text: "See you later! Let me know if you need anything else."
 
   utter_iamabot:
-  - text: "I am an AI assistant with access to a knowledge base. How can I help you?"
+  - text: "I am an AI assistant with access to a knowledge base. I can search through documents and answer your questions based on their content."
+
+  utter_help:
+  - text: "I can answer questions based on my knowledge base. Try asking about specific topics in the documents I have access to!"
+
+  utter_searching:
+  - text: "🔍 Searching my knowledge base for relevant information..."
+
+  utter_thankyou:
+  - text: "You're welcome! Happy to help."
+
+  utter_out_of_scope:
+  - text: "I'm mainly designed to answer questions based on my knowledge base. I might not have information about that topic."
+
+  utter_default:
+  - text: "I'm not sure I understand. You can ask me questions about my knowledge base or say 'help' to see what I can do."
 
 actions:
+  - action_session_start
   - action_search_knowledge
+  - action_add_document
+  - action_check_knowledge_base
+  - action_provide_help
+  - action_fallback
+  - action_show_capabilities
 
 session_config:
   session_expiration_time: 60

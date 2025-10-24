@@ -11,6 +11,9 @@ intents:
   - add_documents
   - thankyou
   - out_of_scope
+  - nlu_fallback
+  - restart
+  - show_capabilities
 
 entities:
   - question
@@ -21,7 +24,7 @@ slots:
     influence_conversation: false
     mappings:
     - type: from_text
-  knowledge_base_status:
+  last_search_time:
     type: text
     influence_conversation: false
     mappings:
@@ -29,41 +32,28 @@ slots:
 
 responses:
   utter_greet:
-  - text: "Hello! I'm your AI assistant with access to a knowledge base. How can I help you today?"
-  - text: "Hi there! I can answer questions based on my document knowledge base. What would you like to know?"
-  - text: "Welcome! Ask me anything about the topics in my knowledge base."
+  - text: "Hello! I'm your AI assistant with access to a comprehensive knowledge base. How can I help you today?"
 
   utter_goodbye:
   - text: "Goodbye! Feel free to ask if you have more questions."
-  - text: "See you later! Let me know if you need anything else."
-  - text: "Bye! Don't hesitate to return if you have more questions."
 
   utter_iamabot:
   - text: "I am an AI assistant with access to a knowledge base. I can search through documents and answer your questions based on their content."
-  - text: "I'm a bot powered by AI and can help you find information in my knowledge base."
 
   utter_help:
   - text: "I can answer questions based on my knowledge base. Try asking about specific topics in the documents I have access to!"
-  - text: "I'm here to help you find information in my knowledge base. Just ask me questions about the topics covered in my documents."
 
   utter_searching:
   - text: "🔍 Searching my knowledge base for relevant information..."
-  - text: "Let me look that up in my knowledge base..."
-  - text: "Searching through my documents for you..."
 
   utter_thankyou:
   - text: "You're welcome! Happy to help."
-  - text: "Glad I could assist! Let me know if you have any other questions."
-  - text: "You're welcome! Feel free to ask if you need anything else."
 
   utter_out_of_scope:
   - text: "I'm mainly designed to answer questions based on my knowledge base. I might not have information about that topic."
-  - text: "I specialize in searching through my document knowledge base. Could you ask me something related to the documents I have access to?"
-  - text: "I'm focused on helping with information from my knowledge base. Try asking me about topics covered in my documents."
 
   utter_default:
   - text: "I'm not sure I understand. You can ask me questions about my knowledge base or say 'help' to see what I can do."
-  - text: "I didn't quite get that. Try asking me a question about the topics in my knowledge base."
 
 actions:
   - action_session_start
@@ -72,7 +62,9 @@ actions:
   - action_check_knowledge_base
   - action_provide_help
   - action_fallback
-  - action_show_searching
+  - action_restart_conversation
+  - action_show_capabilities
+  - action_debug_intent 
 
 session_config:
   session_expiration_time: 60

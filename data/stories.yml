@@ -1,7 +1,6 @@
 version: "3.1"
 
 stories:
-
 - story: happy path - greet and search
   steps:
   - intent: greet
@@ -62,3 +61,8 @@ stories:
   - action: action_fallback
   - intent: search_knowledge
   - action: action_search_knowledge
+
+- story: show capabilities
+  steps:
+  - intent: show_capabilities
+  - action: action_show_capabilities
