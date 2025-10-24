@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import glob
-from rag_pipeline import rag_pipeline
+from actions.rag_pipeline import rag_pipeline  # ✅ import the instance, not the module
 
 def setup_knowledge_base():
     """Initialize the knowledge base with documents using FAISS"""

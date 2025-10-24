@@ -1,19 +1,64 @@
 version: "3.1"
 
 stories:
-- story: greet and search
+
+- story: happy path - greet and search
   steps:
   - intent: greet
   - action: utter_greet
   - intent: search_knowledge
   - action: action_search_knowledge
+  - intent: thankyou
+  - action: utter_thankyou
 
-- story: direct search
+- story: direct knowledge search
   steps:
   - intent: search_knowledge
   - action: action_search_knowledge
 
-- story: goodbye
+- story: help and search
   steps:
+  - intent: help
+  - action: action_provide_help
+  - intent: search_knowledge
+  - action: action_search_knowledge
+
+- story: check knowledge base and search
+  steps:
+  - intent: check_knowledge_base
+  - action: action_check_knowledge_base
+  - intent: search_knowledge
+  - action: action_search_knowledge
+
+- story: add documents inquiry
+  steps:
+  - intent: add_documents
+  - action: action_add_document
+
+- story: goodbye after help
+  steps:
+  - intent: help
+  - action: action_provide_help
   - intent: goodbye
   - action: utter_goodbye
+
+- story: out of scope handling
+  steps:
+  - intent: out_of_scope
+  - action: utter_out_of_scope
+  - intent: search_knowledge
+  - action: action_search_knowledge
+
+- story: bot challenge response
+  steps:
+  - intent: bot_challenge
+  - action: utter_iamabot
+  - intent: search_knowledge
+  - action: action_search_knowledge
+
+- story: fallback recovery
+  steps:
+  - intent: nlu_fallback
+  - action: action_fallback
+  - intent: search_knowledge
+  - action: action_search_knowledge

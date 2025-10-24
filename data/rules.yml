@@ -1,6 +1,11 @@
 version: "3.1"
 
 rules:
+
+- rule: Activate on session start
+  steps:
+  - action: action_session_start
+
 - rule: Say goodbye anytime the user says goodbye
   steps:
   - intent: goodbye
@@ -15,3 +20,43 @@ rules:
   steps:
   - intent: greet
   - action: utter_greet
+
+- rule: Provide help when asked
+  steps:
+  - intent: help
+  - action: action_provide_help
+
+- rule: Check knowledge base status
+  steps:
+  - intent: check_knowledge_base
+  - action: action_check_knowledge_base
+
+- rule: Explain how to add documents
+  steps:
+  - intent: add_documents
+  - action: action_add_document
+
+- rule: Handle thank you
+  steps:
+  - intent: thankyou
+  - action: utter_thankyou
+
+- rule: Handle out of scope questions
+  steps:
+  - intent: out_of_scope
+  - action: utter_out_of_scope
+
+- rule: Main RAG search functionality
+  steps:
+  - intent: search_knowledge
+  - action: action_search_knowledge
+
+- rule: Handle general questions
+  steps:
+  - intent: ask_question
+  - action: action_search_knowledge
+
+- rule: Fallback for unclear messages
+  steps:
+  - intent: nlu_fallback
+  - action: action_fallback

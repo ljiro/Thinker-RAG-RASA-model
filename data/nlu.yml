@@ -1,6 +1,7 @@
 version: "3.1"
 
 nlu:
+
 - intent: greet
   examples: |
     - hey
@@ -9,6 +10,10 @@ nlu:
     - hello there
     - good morning
     - good evening
+    - hey there
+    - greetings
+    - what's up
+    - yo
 
 - intent: goodbye
   examples: |
@@ -18,6 +23,10 @@ nlu:
     - see you later
     - bye
     - bye bye
+    - see ya
+    - farewell
+    - have a good one
+    - catch you later
 
 - intent: bot_challenge
   examples: |
@@ -25,6 +34,11 @@ nlu:
     - are you a human?
     - am I talking to a bot?
     - am I talking to a human?
+    - you are a robot
+    - are you an AI?
+    - are you artificial intelligence?
+    - are you a machine?
+    - you are not human
 
 - intent: ask_question
   examples: |
@@ -32,6 +46,12 @@ nlu:
     - can you answer something?
     - I need information
     - can you help me find something?
+    - I want to ask something
+    - could you answer a question?
+    - I'd like some information
+    - can you help me with a query?
+    - I need to ask something
+    - do you know about
 
 - intent: search_knowledge
   examples: |
@@ -41,3 +61,121 @@ nlu:
     - find information about [deep learning](question)
     - [natural language processing](question)
     - explain [transformers](question)
+    - what does [reinforcement learning](question) mean?
+    - information about [computer vision](question)
+    - tell me about [large language models](question)
+    - what are [convolutional networks](question)?
+    - explain how [backpropagation](question) works
+    - search [gradient descent](question)
+    - find [supervised learning](question)
+    - what is [unsupervised learning](question)
+    - information on [clustering algorithms](question)
+    - tell me about [random forests](question)
+    - what are [support vector machines](question)?
+    - explain [k-means clustering](question)
+    - search for [decision trees](question)
+    - find info about [naive bayes](question)
+
+- intent: help
+  examples: |
+    - help
+    - what can you do?
+    - how does this work?
+    - show me what you can do
+    - I need help
+    - instructions
+    - help me
+    - how to use you
+    - what are your capabilities?
+    - what can I ask you?
+    - how do I use this?
+    - can you help me?
+    - what do you do?
+    - what are you for?
+    - how can you help me?
+
+- intent: check_knowledge_base
+  examples: |
+    - check knowledge base
+    - what documents do you have?
+    - knowledge base status
+    - how many documents do you have?
+    - show me your knowledge base
+    - what's in your knowledge base?
+    - list your documents
+    - what information do you have?
+    - what data do you have access to?
+    - show knowledge base
+    - knowledge base info
+    - document status
+    - what files do you have?
+
+- intent: add_documents
+  examples: |
+    - how to add documents
+    - add documents
+    - add more files
+    - how do I add to your knowledge base?
+    - import documents
+    - add new documents
+    - how to upload files
+    - add more information
+    - include new documents
+    - how to put documents in your system
+    - add PDF files
+    - import more data
+    - add text documents
+    - how to expand your knowledge
+
+- intent: thankyou
+  examples: |
+    - thanks
+    - thank you
+    - thank you so much
+    - thanks a lot
+    - appreciate it
+    - thanks for the help
+    - thank you for your help
+    - that was helpful, thanks
+    - thanks for the information
+    - grateful for your help
+    - you're awesome
+    - good job
+    - well done
+    - perfect, thanks
+
+- intent: out_of_scope
+  examples: |
+    - what's the weather like?
+    - tell me a joke
+    - what time is it?
+    - how old are you?
+    - where do you live?
+    - who created you?
+    - what's your favorite color?
+    - can you play music?
+    - order me a pizza
+    - what's the meaning of life?
+    - do you have feelings?
+    - are you alive?
+    - what's your name?
+    - where are you from?
+    - can you sing?
+    - tell me about yourself
+    - what do you look like?
+    - do you have a body?
+
+- intent: nlu_fallback
+  examples: |
+    - asdfasdf
+    - jibberish
+    - 12345
+    - ????
+    - ....
+    - !@#$%
+    - what what what
+    - huh?
+    - I don't understand
+    - that makes no sense
+    - random text
+    - testing testing
