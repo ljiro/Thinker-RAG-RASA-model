@@ -1,0 +1,10 @@
+rasa-sdk==3.6.1
+sentence-transformers==2.2.2
+chromadb==0.4.15
+langchain==0.0.346
+transformers==4.34.0
+torch==2.0.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117
+accelerate==0.23.0
+bitsandbytes==0.41.1
+unstructured==0.10.3
+pypdf==3.15.0

@@ -1,0 +1,11 @@
+version: "3.1"
+
+intents:
+  - conversational_query
+
+responses:
+  utter_default:
+    - text: "I'm here to help with C++ programming! Ask me about classes, templates, pointers, or any C++ concept from your PDFs."
+
+actions:
+  - action_conversational_query

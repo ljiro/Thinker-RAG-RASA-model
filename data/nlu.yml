@@ -1,0 +1,20 @@
+version: "3.1"
+
+nlu:
+- intent: conversational_query
+  examples: |
+    - hello
+    - hi
+    - help me with C++
+    - explain classes
+    - show me template examples
+    - what are smart pointers
+    - inheritance in C++
+    - memory management
+    - STL containers
+    - give me code examples
+    - list C++ topics
+    - system status
+    - refresh PDFs
+    - goodbye
+    - thanks
