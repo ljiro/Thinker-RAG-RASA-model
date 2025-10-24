@@ -1,7 +1,19 @@
 version: "3.1"
 
 stories:
-- story: conversational flow
+- story: greet and search
   steps:
-  - intent: conversational_query
-  - action: action_conversational_query
+  - intent: greet
+  - action: utter_greet
+  - intent: search_knowledge
+  - action: action_search_knowledge
+
+- story: direct search
+  steps:
+  - intent: search_knowledge
+  - action: action_search_knowledge
+
+- story: goodbye
+  steps:
+  - intent: goodbye
+  - action: utter_goodbye

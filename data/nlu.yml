@@ -1,20 +1,43 @@
 version: "3.1"
 
 nlu:
-- intent: conversational_query
+- intent: greet
   examples: |
+    - hey
     - hello
     - hi
-    - help me with C++
-    - explain classes
-    - show me template examples
-    - what are smart pointers
-    - inheritance in C++
-    - memory management
-    - STL containers
-    - give me code examples
-    - list C++ topics
-    - system status
-    - refresh PDFs
+    - hello there
+    - good morning
+    - good evening
+
+- intent: goodbye
+  examples: |
     - goodbye
-    - thanks
+    - good bye
+    - see you around
+    - see you later
+    - bye
+    - bye bye
+
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you a human?
+    - am I talking to a bot?
+    - am I talking to a human?
+
+- intent: ask_question
+  examples: |
+    - I have a question
+    - can you answer something?
+    - I need information
+    - can you help me find something?
+
+- intent: search_knowledge
+  examples: |
+    - what is [AI](question)?
+    - tell me about [machine learning](question)
+    - search for [neural networks](question)
+    - find information about [deep learning](question)
+    - [natural language processing](question)
+    - explain [transformers](question)

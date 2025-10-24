@@ -1,13 +1,2 @@
-# endpoints.yml
 action_endpoint:
   url: "http://localhost:5055/webhook"
-
-tracker_store:
-  type: InMemoryTrackerStore
-
-# Remove or comment out the lock_store section
-# lock_store:
-#   type: InMemoryLockStore
-
-# Remove event_broker if not needed
-# event_broker:

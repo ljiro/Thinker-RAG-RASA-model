@@ -1,0 +1,12 @@
+rasa-sdk==3.6.1
+sentence-transformers==2.2.2
+faiss-cpu==1.7.4  # Use faiss-gpu if you have CUDA, but faiss-cpu is more stable for low VRAM
+langchain==0.0.346
+transformers==4.34.0
+torch==2.0.1
+accelerate==0.23.0
+bitsandbytes==0.41.1
+unstructured==0.10.3
+pypdf==3.15.0
+python-docx==1.1.0
+numpy==1.24.3

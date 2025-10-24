@@ -1,7 +1,17 @@
 version: "3.1"
 
 rules:
-- rule: Handle all conversational queries
+- rule: Say goodbye anytime the user says goodbye
   steps:
-  - intent: conversational_query
-  - action: action_conversational_query
+  - intent: goodbye
+  - action: utter_goodbye
+
+- rule: Say 'I am a bot' anytime the user challenges
+  steps:
+  - intent: bot_challenge
+  - action: utter_iamabot
+
+- rule: Greet user
+  steps:
+  - intent: greet
+  - action: utter_greet
