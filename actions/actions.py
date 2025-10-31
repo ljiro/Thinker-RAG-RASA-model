@@ -1,3 +1,4 @@
+# actions.py - COMPLETE FILE
 from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
@@ -9,6 +10,7 @@ import os
 import logging
 import time
 from datetime import datetime
+import re
 
 # Add the actions directory to the path so we can import our rag_pipeline
 sys.path.append(os.path.dirname(__file__))
@@ -47,15 +49,8 @@ class ActionSessionStart(Action):
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: DomainDict
     ) -> List[EventType]:
         
-        # Enhanced welcome message
-        welcome_message = """🤖 Hello! I'm your AI assistant with access to a comprehensive knowledge base. 
-
-I can help you with:
-• Answering questions based on my document collection
-• Providing detailed explanations on various topics
-• Searching through my knowledge base for specific information
-
-You can ask me complex questions, and I'll provide thorough answers with source references!"""
+        # Simple welcome message
+        welcome_message = "Hello! How can I help you today?"
 
         dispatcher.utter_message(text=welcome_message)
         
@@ -66,12 +61,12 @@ You can ask me complex questions, and I'll provide thorough answers with source 
                      "I'll only be able to answer basic questions."
             )
         else:
-            # Show knowledge base status
+            # Show knowledge base status (optional)
             doc_count = len(rag_pipeline.documents)
-            status_msg = f"📚 My knowledge base is ready with {doc_count} document chunks."
             if doc_count == 0:
-                status_msg += "\n💡 Use 'add documents' to learn how to add content to my knowledge base."
-            dispatcher.utter_message(text=status_msg)
+                dispatcher.utter_message(
+                    text="💡 Use 'add documents' to learn how to add content to my knowledge base."
+                )
 
         return [SessionStarted(), ActionExecuted("action_listen")]
 
@@ -81,6 +76,23 @@ class ActionSearchKnowledge(Action):
     
     def name(self) -> Text:
         return "action_search_knowledge"
+
+    def _clean_response(self, text):
+        """Remove document references from the response text."""
+        # Pattern to match "Document X content about..." 
+        pattern1 = r'Document\s+\d+\s+content\s+about[^.]*\.\s*'
+        # Pattern to match "Document X about..."
+        pattern2 = r'Document\s+\d+\s+about[^.]*\.\s*'
+        
+        # Remove all patterns
+        text = re.sub(pattern1, '', text, flags=re.IGNORECASE)
+        text = re.sub(pattern2, '', text, flags=re.IGNORECASE)
+        
+        # Clean up extra spaces
+        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r'\.\s*\.', '.', text)  # Remove duplicate periods
+        
+        return text
 
     def run(
         self, 
@@ -128,6 +140,9 @@ class ActionSearchKnowledge(Action):
                 logger.info("🤖 Generating response...")
                 response = rag_pipeline.generate_response(search_query, similar_docs)
                 
+                # CLEAN THE RESPONSE - Remove document references
+                cleaned_response = self._clean_response(response)
+                
                 # Add source information
                 sources = list(set([doc['source'] for doc in similar_docs]))
                 source_files = [os.path.basename(src) for src in sources]
@@ -135,8 +150,8 @@ class ActionSearchKnowledge(Action):
                 # Calculate processing time
                 processing_time = time.time() - start_time
                 
-                # Create the FULL response with answer AND sources
-                full_response = f"{response}\n\n"
+                # Create the FULL response with CLEANED answer AND sources
+                full_response = f"{cleaned_response}\n\n"
                 full_response += f"📚 **Sources**: {', '.join(source_files)}\n"
                 full_response += f"⏱️ **Processing time**: {processing_time:.2f}s"
                 
@@ -420,6 +435,7 @@ class ActionShowSearching(Action):
         # For text interface, we handle this in the main search action
         return []
     
+
 class ActionDebugIntent(Action):
     """Debug action to see what intent is being detected"""
     

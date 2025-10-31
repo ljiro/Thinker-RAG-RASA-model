@@ -1,3 +1,4 @@
+# rag_pipeline.py - MODIFIED VERSION
 import os
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -6,6 +7,7 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 import logging
+import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ class TinyLlamaRAGPipeline:
         self._setup_models()
 
     # ----------------------------------------------------
-    # Model setup
+    # Model setup (keep this part the same)
     # ----------------------------------------------------
     def _setup_models(self):
         try:
@@ -78,14 +80,15 @@ class TinyLlamaRAGPipeline:
         dim = self.embedder.get_sentence_embedding_dimension()
         self.index = faiss.IndexFlatL2(dim)
         self.docs = []
+        self.metadata = []  # Store document metadata
 
-        # Simulated documents (replace with real corpus)
         for i in range(417):
             doc = {
                 "source": f"mock_source_{i}.pdf",
                 "content": f"Document {i} content about Baguio tourism, traffic, and culture."
             }
             self.docs.append(doc)
+            self.metadata.append(doc)  # Store metadata for status checks
             embedding = self.embedder.encode(doc["content"])
             self.index.add(np.array([embedding]).astype("float32"))
 
@@ -106,7 +109,7 @@ class TinyLlamaRAGPipeline:
         return self.retrieve_context(query, k=n_results)
 
     # ----------------------------------------------------
-    # Text Generation (cleaned up and improved)
+    # Text Generation (MODIFIED to remove document references)
     # ----------------------------------------------------
     def _generate(self, prompt):
         """Unified generation helper with cleanup and anti-repetition."""
@@ -131,7 +134,31 @@ class TinyLlamaRAGPipeline:
             if not line.strip().lower().startswith(("question:", "context:")) and line.strip():
                 cleaned.append(line)
         cleaned_text = " ".join(cleaned).replace("Answer:", "").strip()
+        
+        # 🆕 NEW: Remove document references like "Document 279 content about..."
+        cleaned_text = self._remove_document_references(cleaned_text)
+        
         return cleaned_text or "I'm sorry, I couldn't find relevant information."
+
+    def _remove_document_references(self, text):
+        """Remove document reference patterns from the response text."""
+        # Pattern to match "Document X content about..." 
+        pattern1 = r'Document\s+\d+\s+content\s+about[^.]*\.\s*'
+        # Pattern to match "Document X about..."
+        pattern2 = r'Document\s+\d+\s+about[^.]*\.\s*'
+        # Pattern to match mock source references
+        pattern3 = r'mock_source_\d+\.pdf\s*'
+        
+        # Remove all patterns
+        text = re.sub(pattern1, '', text, flags=re.IGNORECASE)
+        text = re.sub(pattern2, '', text, flags=re.IGNORECASE)
+        text = re.sub(pattern3, '', text, flags=re.IGNORECASE)
+        
+        # Clean up extra spaces and empty lines
+        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r'\.\s*\.', '.', text)  # Remove duplicate periods
+        
+        return text
 
     # ----------------------------------------------------
     # Public methods for RASA and testing
@@ -150,6 +177,12 @@ class TinyLlamaRAGPipeline:
         context_text = "\n".join([doc["content"] for doc in context_docs])
         prompt = f"Context:\n{context_text}\n\nQuestion: {query}\nAnswer (concise and factual):"
         return self._generate(prompt)
+
+    # Add properties for compatibility with actions.py
+    @property
+    def documents(self):
+        """Return documents for status checking."""
+        return self.docs
 
 
 # ----------------------------------------------------

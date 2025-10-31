@@ -1,2 +1,13 @@
+# endpoints.yml
 action_endpoint:
   url: "http://localhost:5055/webhook"
+
+# Add HTTP API configuration for timeout
+http_api:
+  # Increase response timeout to 120 seconds
+  response_timeout: 10000
+  # Reduce workers to 1 for stability
+  max_workers: 1
+  # CORS settings
+  cors:
+    origins: ["*"]

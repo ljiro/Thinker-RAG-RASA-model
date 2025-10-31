@@ -31,8 +31,8 @@ slots:
     - type: custom
 
 responses:
-  utter_greet:
-  - text: "Hello! I'm your AI assistant with access to a comprehensive knowledge base. How can I help you today?"
+  # utter_greet has been REMOVED to prevent automatic greeting
+  # The conversation will now start naturally without a long automatic message
 
   utter_goodbye:
   - text: "Goodbye! Feel free to ask if you have more questions."
@@ -64,7 +64,7 @@ actions:
   - action_fallback
   - action_restart_conversation
   - action_show_capabilities
-  - action_debug_intent 
+  - action_debug_intent
 
 session_config:
   session_expiration_time: 60

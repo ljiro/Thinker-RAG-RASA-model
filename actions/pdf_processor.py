@@ -36,11 +36,6 @@ class ActionSessionStart(Action):
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: DomainDict
     ) -> List[EventType]:
         
-        # Send welcome message
-        dispatcher.utter_message(
-            text="Hello! I'm your AI assistant with access to a knowledge base. " \
-                 "You can ask me questions about the documents in my knowledge base."
-        )
         
         # Check if RAG system is available
         if not RAG_AVAILABLE:
@@ -90,7 +85,7 @@ class ActionSearchKnowledge(Action):
         
         try:
             # Show typing indicator (simulated)
-            dispatcher.utter_message(response="utter_searching")
+            #dispatcher.utter_message(response="utter_searching")
             
             # Search for relevant information in the knowledge base
             similar_docs = rag_pipeline.search_similar(search_query, n_results=3)
