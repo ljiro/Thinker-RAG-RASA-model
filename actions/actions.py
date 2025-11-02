@@ -1,464 +1,578 @@
-# actions.py - COMPLETE FILE
+# actions.py
 from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
-from rasa_sdk.types import DomainDict
-
-import sys
-import os
-import logging
-import time
 from datetime import datetime
-import re
-
-# Add the actions directory to the path so we can import our rag_pipeline
-sys.path.append(os.path.dirname(__file__))
+import logging
+import os
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("actions.log"),
-        logging.StreamHandler()
-    ]
-)
 logger = logging.getLogger(__name__)
 
+# Import RAG pipeline - FIXED IMPORTS
 try:
-    from rag_pipeline import rag_pipeline
+    # Try relative import first (when running as package)
+    from .rag_pipeline import rag_pipeline, generate_answer, retrieve_context
     RAG_AVAILABLE = True
-    logger.info("✅ RAG pipeline imported successfully")
-    logger.info(f"📊 Knowledge base contains {len(rag_pipeline.documents)} documents")
-except ImportError as e:
-    logger.error(f"❌ Failed to import RAG pipeline: {e}")
-    RAG_AVAILABLE = False
-except Exception as e:
-    logger.error(f"❌ Error initializing RAG pipeline: {e}")
-    RAG_AVAILABLE = False
-
+    logger.info("✅ RAG Pipeline imported successfully via relative import")
+except ImportError:
+    try:
+        # Fallback to direct import (when running standalone)
+        from rag_pipeline import rag_pipeline, generate_answer, retrieve_context
+        RAG_AVAILABLE = True
+        logger.info("✅ RAG Pipeline imported successfully via direct import")
+    except ImportError as e:
+        RAG_AVAILABLE = False
+        logger.error(f"❌ Failed to import RAG pipeline: {e}")
 
 class ActionSessionStart(Action):
-    """Action triggered when a new session starts."""
-    
     def name(self) -> Text:
         return "action_session_start"
 
     async def run(
-        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: DomainDict
+        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[EventType]:
         
-        # Simple welcome message
-        welcome_message = "Hello! How can I help you today?"
-
-        dispatcher.utter_message(text=welcome_message)
+        events = [SessionStarted()]
         
-        # Check if RAG system is available
-        if not RAG_AVAILABLE:
-            dispatcher.utter_message(
-                text="⚠️ Note: My knowledge base system is currently unavailable. " \
-                     "I'll only be able to answer basic questions."
-            )
-        else:
-            # Show knowledge base status (optional)
-            doc_count = len(rag_pipeline.documents)
-            if doc_count == 0:
-                dispatcher.utter_message(
-                    text="💡 Use 'add documents' to learn how to add content to my knowledge base."
-                )
-
-        return [SessionStarted(), ActionExecuted("action_listen")]
-
+        if len(tracker.events) <= 3:
+            events.append(ActionExecuted("action_listen"))
+        
+        return events
 
 class ActionSearchKnowledge(Action):
-    """Enhanced action for searching the knowledge base using RAG with detailed responses."""
-    
     def name(self) -> Text:
         return "action_search_knowledge"
 
-    def _clean_response(self, text):
-        """Remove document references from the response text."""
-        # Pattern to match "Document X content about..." 
-        pattern1 = r'Document\s+\d+\s+content\s+about[^.]*\.\s*'
-        # Pattern to match "Document X about..."
-        pattern2 = r'Document\s+\d+\s+about[^.]*\.\s*'
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
-        # Remove all patterns
-        text = re.sub(pattern1, '', text, flags=re.IGNORECASE)
-        text = re.sub(pattern2, '', text, flags=re.IGNORECASE)
+        # DEBUG: Check if multiple actions are being called
+        recent_events = [e for e in tracker.events if e.get('event') == 'action']
+        recent_action_names = [e.get('name') for e in recent_events[-5:]]  # Last 5 actions
+        logger.info(f"🔍 Recent actions in tracker: {recent_action_names}")
         
-        # Clean up extra spaces
-        text = re.sub(r'\s+', ' ', text).strip()
-        text = re.sub(r'\.\s*\.', '.', text)  # Remove duplicate periods
+        search_query = tracker.latest_message.get('text', '')
+        logger.info(f"🔍 ActionSearchKnowledge processing: '{search_query}'")
         
-        return text
-
-    def run(
-        self, 
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
+        if not search_query:
+            dispatcher.utter_message(text="Please ask a question about Baguio City ordinances.")
+            return []
         
-        start_time = time.time()
+        logger.info(f"🔍 Processing search query: {search_query}")
         
-        # Check if RAG system is available
         if not RAG_AVAILABLE:
-            dispatcher.utter_message(
-                text="❌ I'm sorry, but my knowledge search system is currently unavailable. " \
-                     "Please make sure the action server is running properly and check the logs for errors."
-            )
+            dispatcher.utter_message(text="The knowledge base is currently unavailable. Please try again later.")
             return []
-        
-        # Get user message
-        user_message = tracker.latest_message.get('text', '').strip()
-        
-        if not user_message:
-            dispatcher.utter_message(
-                text="❌ I didn't receive your question. Please try asking again."
-            )
-            return []
-
-        # Extract entities or use full message
-        question_entity = next(tracker.get_latest_entity_values("question"), None)
-        search_query = question_entity or user_message
-        
-        logger.info(f"🔍 Processing search query: '{search_query}'")
         
         try:
-            # Show searching message
-            dispatcher.utter_message(text="🔍 Searching my knowledge base for relevant information...")
+            # Generate answer - this returns the complete formatted response
+            answer = generate_answer(search_query)
             
-            # Search for relevant information in the knowledge base
-            similar_docs = rag_pipeline.search_similar(search_query, n_results=3)
-            
-            if similar_docs:
-                logger.info(f"✅ Found {len(similar_docs)} relevant documents")
+            if answer:
+                # DEBUG: Log the response to see what we're getting
+                logger.info(f"📝 RAG Response received, length: {len(answer)} characters")
                 
-                # Generate response using RAG
-                logger.info("🤖 Generating response...")
-                response = rag_pipeline.generate_response(search_query, similar_docs)
+                # Send as ONE SINGLE MESSAGE - preserve all formatting including bullet points
+                dispatcher.utter_message(text=answer)
                 
-                # CLEAN THE RESPONSE - Remove document references
-                cleaned_response = self._clean_response(response)
-                
-                # Add source information
-                sources = list(set([doc['source'] for doc in similar_docs]))
-                source_files = [os.path.basename(src) for src in sources]
-                
-                # Calculate processing time
-                processing_time = time.time() - start_time
-                
-                # Create the FULL response with CLEANED answer AND sources
-                full_response = f"{cleaned_response}\n\n"
-                full_response += f"📚 **Sources**: {', '.join(source_files)}\n"
-                full_response += f"⏱️ **Processing time**: {processing_time:.2f}s"
-                
-                # Send the complete response
-                dispatcher.utter_message(text=full_response)
-                
-                logger.info(f"✅ Successfully generated response in {processing_time:.2f}s")
-                
+                # DEBUG: Confirm message was sent
+                logger.info("✅ Response sent as single message")
             else:
-                logger.info(f"❌ No relevant documents found for: '{search_query}'")
                 dispatcher.utter_message(
-                    text=f"❌ I couldn't find relevant information about '{search_query}' in my knowledge base."
+                    text="I couldn't find specific information about that in the Baguio City ordinances. "
+                         "Please try rephrasing your question."
                 )
                 
         except Exception as e:
-            logger.error(f"❌ Error in action_search_knowledge: {str(e)}", exc_info=True)
+            logger.error(f"❌ Error in action_search_knowledge: {e}")
             dispatcher.utter_message(
-                text=f"❌ I encountered an error while searching for information about '{search_query}'. Please try again."
+                text="I encountered an error while searching. Please try again with a different question."
             )
         
-        return [SlotSet("search_query", search_query), SlotSet("last_search_time", datetime.now().isoformat())]
+        return [SlotSet("last_search_time", datetime.now().isoformat())]
 
-
-class ActionAddDocument(Action):
-    """Enhanced action to provide detailed information about adding documents."""
-    
+class ActionSearchOrdinances(Action):
     def name(self) -> Text:
-        return "action_add_document"
+        return "action_search_ordinances"
 
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
-        instructions = """
-📥 **How to Add Documents to My Knowledge Base**
-
-**Step-by-Step Guide:**
-
-1. **Prepare Your Documents**
-   • Supported formats: PDF, TXT, DOCX
-   • Place files in: `knowledge_base/documents/` folder
-
-2. **Add Documents**
-   • Copy your files to the documents folder
-   • Run: `python setup_knowledge_base.py`
-   • Restart the action server: `rasa run actions`
-
-3. **Verification**
-   • Use: `check knowledge base` to confirm documents were added
-   • Test by asking questions about the new content
-
-**Best Practices:**
-• Use clear, well-structured documents for best results
-• Documents should be text-heavy (not image-based PDFs)
-• Ideal document size: 1-50 pages
-• Remove sensitive information before adding
-
-**Current Knowledge Base Status:**
-"""
+        question = tracker.latest_message.get('text', '')
         
-        # Add current status
-        if RAG_AVAILABLE:
-            doc_count = len(rag_pipeline.documents)
-            instructions += f"• Documents indexed: {doc_count}\n"
-            if doc_count == 0:
-                instructions += "• ⚠️ No documents currently in knowledge base\n"
-        else:
-            instructions += "• ❌ Knowledge base unavailable\n"
-        
-        instructions += "\nReady to expand my knowledge! 🚀"
-
-        dispatcher.utter_message(text=instructions)
-        return []
-
-
-class ActionCheckKnowledgeBase(Action):
-    """Enhanced action to check the detailed status of the knowledge base."""
-    
-    def name(self) -> Text:
-        return "action_check_knowledge_base"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
+        if not question:
+            dispatcher.utter_message(text="Please ask a question about Baguio City ordinances.")
+            return []
         
         if not RAG_AVAILABLE:
-            dispatcher.utter_message(
-                text="❌ My knowledge base system is currently unavailable. Please check the action server logs."
-            )
+            dispatcher.utter_message(text="The ordinance system is currently unavailable.")
             return []
         
         try:
-            total_documents = len(rag_pipeline.documents)
-            unique_sources = len(set([doc['source'] for doc in rag_pipeline.metadata]))
+            # This should return ONE complete response with formatting
+            answer = generate_answer(question)
             
-            status_message = "📊 **Knowledge Base Detailed Status**\n\n"
-            status_message += f"• **Documents indexed**: {total_documents} chunks\n"
-            status_message += f"• **Unique source files**: {unique_sources}\n"
-            status_message += f"• **Search system**: ✅ Operational\n"
-            status_message += f"• **Response generation**: ✅ Active\n"
-            status_message += f"• **Running on**: CPU (Stable)\n"
-            status_message += f"• **Last update**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            
-            if total_documents > 0:
-                # Show some sample sources
-                sample_sources = list(set([os.path.basename(doc['source']) for doc in rag_pipeline.metadata[:5]]))
-                status_message += f"• **Sample documents**: {', '.join(sample_sources)}\n"
-                
-                if total_documents > 5:
-                    status_message += f"• **And {total_documents - 5} more chunks...**\n"
+            if answer:
+                logger.info(f"📝 Ordinance search response: {len(answer)} characters")
+                dispatcher.utter_message(text=answer)
             else:
-                status_message += "\n⚠️ **No documents in knowledge base**\n"
-                status_message += "Use 'add documents' to get started and expand my knowledge!"
-            
-            dispatcher.utter_message(text=status_message)
+                dispatcher.utter_message(
+                    text="I couldn't find specific information about that in the ordinances database."
+                )
             
         except Exception as e:
-            logger.error(f"❌ Error checking knowledge base: {e}")
+            logger.error(f"❌ Error searching ordinances: {e}")
             dispatcher.utter_message(
-                text="❌ Unable to check knowledge base status at the moment. Please try again later."
+                text="I encountered an error while searching ordinances. Please try again."
             )
         
-        return []
+        return [SlotSet("last_search_time", datetime.now().isoformat())]
 
-
-class ActionProvideHelp(Action):
-    """Enhanced action to provide comprehensive help information."""
-    
+class ActionOrdinanceHelp(Action):
     def name(self) -> Text:
-        return "action_provide_help"
+        return "action_ordinance_help"
 
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
-        help_text = """
-🤖 **Comprehensive Help Guide**
-
-**How to Use Me Effectively:**
-
-🎯 **Ask Detailed Questions**
-• "Explain machine learning algorithms in detail"
-• "What are the key principles of project management?"
-• "Describe the process of neural network training"
-• "Compare and contrast different AI approaches"
-
-📚 **Knowledge Base Management**
-• "Check knowledge base" - See detailed status
-• "Add documents" - Learn how to expand my knowledge
-• "Search for [topic]" - Direct knowledge base search
-
-🔍 **Advanced Usage**
-• I can handle complex, multi-part questions
-• I provide detailed answers with source references
-• I can explain concepts from my knowledge base thoroughly
-• I include processing metadata in responses
-
-💡 **Example Questions:**
-• "What are the main types of artificial intelligence and their applications?"
-• "Explain how deep learning differs from traditional machine learning"
-• "Describe the key features of effective leadership according to my documents"
-
-📊 **System Information:**
-"""
+        help_text = (
+            "🔍 **Ordinance Search Help:**\n\n"
+            "I can help you search through Baguio City ordinances for:\n"
+            "• Traffic rules and regulations\n"
+            "• Business permit information\n"
+            "• Local laws and guidelines\n"
+            "• City procedures and requirements\n\n"
+            "**Examples:**\n"
+            "- \"What are the traffic rules in Baguio?\"\n"
+            "- \"How do business permits work?\"\n"
+            "- \"Information about local regulations\"\n"
+            "- \"Search for city guidelines\""
+        )
         
-        # Add system status
-        if RAG_AVAILABLE:
-            doc_count = len(rag_pipeline.documents)
-            help_text += f"• Knowledge base: {doc_count} document chunks ready\n"
-            help_text += "• Response style: Detailed and comprehensive\n"
-            help_text += "• Source citation: Enabled\n"
-        else:
-            help_text += "• Knowledge base: ❌ Unavailable\n"
-        
-        help_text += "\nI'm ready to provide detailed, well-sourced answers! 🚀"
-
         dispatcher.utter_message(text=help_text)
         return []
 
+class ActionCheckOrdinanceSystem(Action):
+    def name(self) -> Text:
+        return "action_check_ordinance_system"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        status_parts = ["🔧 **System Status:**"]
+        
+        if RAG_AVAILABLE:
+            try:
+                stats = rag_pipeline.get_stats()
+                status_parts.append(f"• RAG System: ✅ Available ({stats.get('total_documents', 0)} documents)")
+                status_parts.append(f"• Has Data: {'✅ Yes' if stats.get('has_data') else '❌ No'}")
+            except:
+                status_parts.append("• RAG System: ⚠️ Available but stats unavailable")
+        else:
+            status_parts.append("• RAG System: ❌ Unavailable")
+        
+        status_parts.extend([
+            "",
+            "💡 **What I can help with:**",
+            "• Search Baguio City ordinances and laws",
+            "• Answer questions from knowledge base", 
+            "• Provide general guidance",
+            "• Traffic and regulation information"
+        ])
+        
+        dispatcher.utter_message(text="\n".join(status_parts))
+        return []
+
+class ActionProvideHelp(Action):
+    def name(self) -> Text:
+        return "action_provide_help"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        help_text = (
+            "🤖 **How I Can Help You:**\n\n"
+            "I'm your assistant for Baguio City information with access to:\n\n"
+            "🔍 **Ordinance Knowledge Base:**\n"
+            "- Answer questions about Baguio City ordinances\n"
+            "- Provide information from legal documents\n"
+            "- Help with general inquiries\n"
+            "- Traffic and local information\n\n"
+            "**Try asking:**\n"
+            "- \"What are the traffic rules in Baguio?\"\n"
+            "- \"Information about local businesses\"\n" 
+            "- \"Baguio city guidelines\"\n"
+            "- \"Search for regulations\"\n"
+            "- \"Check system status\""
+        )
+        
+        dispatcher.utter_message(text=help_text)
+        return []
 
 class ActionFallback(Action):
-    """Enhanced fallback action with helpful guidance."""
-    
     def name(self) -> Text:
         return "action_fallback"
 
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
-        fallback_text = """
-❓ I'm not quite sure what you're asking.
-
-💡 **Here's how I can help you:**
-
-• Ask detailed questions about topics in my knowledge base
-• Request explanations of complex concepts
-• Search for specific information across my documents
-• Check what documents I have available
-• Learn how to add more content to my knowledge base
-
-🔍 **Try asking something like:**
-• "Explain artificial intelligence in detail"
-• "What do you know about machine learning?"
-• "Search for information about neural networks"
-• "Check knowledge base status"
-
-Or simply tell me what topic you're interested in!"""
-
-        dispatcher.utter_message(text=fallback_text)
+        message = tracker.latest_message.get('text', '').lower()
+        
+        # Check if it's a general question that RAG can handle
+        question_words = ['what', 'how', 'when', 'where', 'why', 'can you', 'tell me', 'search']
+        if any(word in message for word in question_words) and RAG_AVAILABLE:
+            return ActionSearchKnowledge().run(dispatcher, tracker, domain)
+        
+        # Default fallback response
+        dispatcher.utter_message(
+            text="I'm not quite sure what you're asking. I can help you with:\n"
+                 "• Baguio City ordinances and laws\n"
+                 "• General questions about Baguio\n"
+                 "• Local guidelines and information\n\n"
+                 "Try asking about specific topics or say 'help' for more guidance."
+        )
         return []
 
-
 class ActionShowCapabilities(Action):
-    """Action to showcase system capabilities."""
-    
     def name(self) -> Text:
         return "action_show_capabilities"
 
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
-        capabilities = """
-🚀 **My Enhanced Capabilities**
-
-**Advanced RAG System:**
-• 📚 Document understanding and retrieval
-• 🤖 AI-powered response generation
-• 🔍 Semantic search across knowledge base
-• 📊 Source citation and relevance scoring
-
-**What I Can Do:**
-• Answer complex, detailed questions
-• Provide comprehensive explanations
-• Search through multiple documents simultaneously
-• Generate well-structured, informative responses
-• Handle technical and conceptual questions
-
-**Knowledge Features:**
-• Multi-document comprehension
-• Context-aware responses
-• Detailed source referencing
-• Processing time optimization
-
-Ready to tackle your challenging questions! 💪"""
-
+        capabilities = (
+            "🚀 **My Capabilities:**\n\n"
+            "🔍 **Ordinance Knowledge Base:**\n"
+            "- Search through Baguio City Code of Ordinances\n"
+            "- Answer questions based on legal documents\n"
+            "- Provide specific regulation information\n"
+            "- Reference official ordinance sections\n\n"
+            "💡 **Try these examples:**\n"
+            "- \"What are the traffic rules in Baguio?\"\n"
+            "- \"How do I get a business permit?\"\n"
+            "- \"What are the penalties for littering?\"\n"
+            "- \"Search ordinances about noise control\""
+        )
+        
         dispatcher.utter_message(text=capabilities)
         return []
 
-
-class ActionShowSearching(Action):
-    """Action to show that the system is searching."""
-    
+class ActionAddDocument(Action):
     def name(self) -> Text:
-        return "action_show_searching"
+        return "action_add_document"
 
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
-        # This action can be used to show typing indicators in UI integrations
-        # For text interface, we handle this in the main search action
+        help_text = (
+            "📁 **Adding Documents to Knowledge Base:**\n\n"
+            "To add documents to the system:\n\n"
+            "1. **Place PDF files** in the 'knowledge_base/documents/' folder\n"
+            "2. **Run the setup script**: python setup_ordinances.py\n"
+            "3. **Restart** the Rasa actions server\n\n"
+            "The system will automatically process the documents and make them searchable."
+        )
+        
+        dispatcher.utter_message(text=help_text)
         return []
-    
+
+class ActionCheckKnowledgeBase(Action):
+    def name(self) -> Text:
+        return "action_check_knowledge_base"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        status_parts = ["📚 **Knowledge Base Status:**"]
+        
+        if RAG_AVAILABLE:
+            try:
+                stats = rag_pipeline.get_stats()
+                status_parts.append(f"• Documents: {stats.get('total_documents', 0)}")
+                status_parts.append(f"• Data Available: {'✅ Yes' if stats.get('has_data') else '❌ No'}")
+                status_parts.append(f"• Embedding Model: {stats.get('embedding_model', 'N/A')}")
+                status_parts.append(f"• LLM Model: {stats.get('llm_model', 'N/A')}")
+            except Exception as e:
+                status_parts.append(f"• Status: ⚠️ Error: {e}")
+        else:
+            status_parts.append("• System: ❌ Not available")
+        
+        status_parts.extend([
+            "",
+            "💡 **To update knowledge base:**",
+            "• Add PDF files to 'knowledge_base/documents/'",
+            "• Run: python setup_ordinances.py", 
+            "• Restart actions server"
+        ])
+        
+        dispatcher.utter_message(text="\n".join(status_parts))
+        return []
 
 class ActionDebugIntent(Action):
-    """Debug action to see what intent is being detected"""
-    
     def name(self) -> Text:
         return "action_debug_intent"
 
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
-        latest_intent = tracker.latest_message.get('intent', {}).get('name')
-        entities = tracker.latest_message.get('entities', [])
-        text = tracker.latest_message.get('text', '')
+        latest_message = tracker.latest_message
+        intent = latest_message.get('intent', {}).get('name', 'None')
+        entities = latest_message.get('entities', [])
+        text = latest_message.get('text', '')
         
-        debug_msg = f"""
-🔍 **Debug Information:**
-• **User said**: "{text}"
-• **Detected intent**: "{latest_intent}"
-• **Entities**: {entities}
-"""
+        debug_info = (
+            f"🔍 **Debug Information:**\n"
+            f"• Intent: {intent}\n"
+            f"• Text: '{text}'\n"
+            f"• Entities: {entities}\n"
+            f"• RAG System: {'✅ Available' if RAG_AVAILABLE else '❌ Unavailable'}"
+        )
         
-        dispatcher.utter_message(text=debug_msg)
+        dispatcher.utter_message(text=debug_info)
+        return []
+
+class ActionDebugResponse(Action):
+    def name(self) -> Text:
+        return "action_debug_response"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        # Test the RAG response directly
+        test_query = "What are the fines for traffic violations in Baguio?"
+        
+        if RAG_AVAILABLE:
+            try:
+                response = generate_answer(test_query)
+                logger.info(f"🔍 DEBUG RAG Response Type: {type(response)}")
+                logger.info(f"🔍 DEBUG RAG Response Length: {len(response)} characters")
+                logger.info(f"🔍 DEBUG RAG Response Preview: {response[:200]}...")
+                
+                # Count newlines to see structure
+                newline_count = response.count('\n')
+                logger.info(f"🔍 DEBUG Newlines in response: {newline_count}")
+                
+                # Count bullet points
+                bullet_count = response.count('•') + response.count('-') + response.count('*')
+                logger.info(f"🔍 DEBUG Bullet points in response: {bullet_count}")
+                
+                dispatcher.utter_message(
+                    text=f"🔍 **Debug Response Analysis:**\n"
+                         f"• Response length: {len(response)} characters\n"
+                         f"• Newlines: {newline_count}\n"
+                         f"• Bullet points: {bullet_count}\n"
+                         f"• RAG Available: ✅ Yes"
+                )
+                
+                # Send the actual response
+                dispatcher.utter_message(text=response)
+                
+            except Exception as e:
+                logger.error(f"❌ Debug error: {e}")
+                dispatcher.utter_message(text=f"Debug error: {e}")
+        else:
+            dispatcher.utter_message(text="RAG not available for debugging")
+        
+        return []
+
+class ActionTestRAGResponse(Action):
+    def name(self) -> Text:
+        return "action_test_rag_response"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        if not RAG_AVAILABLE:
+            dispatcher.utter_message(text="RAG system is not available for testing.")
+            return []
+        
+        try:
+            # Test with a known query that should return formatted response
+            test_queries = [
+                "What are the traffic rules in Baguio?",
+                "Tell me about business permits in Baguio City",
+                "What are the fines for violations?"
+            ]
+            
+            for query in test_queries:
+                response = generate_answer(query)
+                dispatcher.utter_message(text=f"**Query:** {query}")
+                dispatcher.utter_message(text=f"**Response:** {response}")
+                dispatcher.utter_message(text="---")
+                
+        except Exception as e:
+            logger.error(f"❌ RAG test error: {e}")
+            dispatcher.utter_message(text=f"Test error: {e}")
+        
+        return []
+
+class ActionDebugMessageFlow(Action):
+    def name(self) -> Text:
+        return "action_debug_message_flow"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        # Test the exact flow
+        test_query = "What are the traffic rules in Baguio?"
+        
+        if RAG_AVAILABLE:
+            try:
+                answer = generate_answer(test_query)
+                logger.info(f"🔍 RAG response type: {type(answer)}")
+                logger.info(f"🔍 RAG response length: {len(answer)}")
+                
+                # Send as ONE message with clear markers
+                debug_response = f"🚨 DEBUG SINGLE MESSAGE 🚨\n\n{answer}\n\n🚨 END SINGLE MESSAGE 🚨"
+                dispatcher.utter_message(text=debug_response)
+                
+                logger.info("✅ Sent as single debug message")
+                
+            except Exception as e:
+                logger.error(f"❌ Debug error: {e}")
+                dispatcher.utter_message(text=f"Debug error: {e}")
+        else:
+            dispatcher.utter_message(text="RAG not available")
+        
+        return []
+
+class ActionDebugSingleResponse(Action):
+    def name(self) -> Text:
+        return "action_debug_single_response"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        if not RAG_AVAILABLE:
+            dispatcher.utter_message(text="RAG system is not available.")
+            return []
+        
+        try:
+            # Test with a simple query that should return one response
+            test_query = "What are the traffic rules in Baguio?"
+            
+            # Get the RAG response
+            answer = generate_answer(test_query)
+            
+            # Log the response details
+            logger.info(f"🔍 RAG Response Type: {type(answer)}")
+            logger.info(f"🔍 RAG Response Length: {len(answer)} characters")
+            logger.info(f"🔍 RAG Response Preview: {answer[:200]}...")
+            
+            # Count how many dispatcher calls we make
+            logger.info("📤 Sending SINGLE message via dispatcher...")
+            
+            # Send as ONE message with clear boundaries
+            bounded_response = f"🚨 START SINGLE MESSAGE 🚨\n\n{answer}\n\n🚨 END SINGLE MESSAGE 🚨"
+            dispatcher.utter_message(text=bounded_response)
+            
+            logger.info("✅ Single message sent via dispatcher")
+            
+        except Exception as e:
+            logger.error(f"❌ Debug error: {e}")
+            dispatcher.utter_message(text=f"Debug error: {e}")
+        
+        return []
+
+class ActionQueryOrdinances(Action):
+    def name(self) -> Text:
+        return "action_query_ordinances"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        logger.info("🔍 ActionQueryOrdinances triggered")
+        return ActionSearchKnowledge().run(dispatcher, tracker, domain)
+
+class ActionHandleOrdinancePenalty(Action):
+    def name(self) -> Text:
+        return "action_handle_ordinance_penalty"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        logger.info("🔍 ActionHandleOrdinancePenalty triggered")
+        return ActionSearchKnowledge().run(dispatcher, tracker, domain)
+
+class ActionHandleBusinessPermit(Action):
+    def name(self) -> Text:
+        return "action_handle_business_permit"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        logger.info("🔍 ActionHandleBusinessPermit triggered")
+        return ActionSearchKnowledge().run(dispatcher, tracker, domain)
+
+class ActionShowOrdinanceStats(Action):
+    def name(self) -> Text:
+        return "action_show_ordinance_stats"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        logger.info("🔍 ActionShowOrdinanceStats triggered")
+        return ActionCheckKnowledgeBase().run(dispatcher, tracker, domain)
+
+# Add any other actions from your domain.yml that might be triggering
+
+class ActionFindMultipleMessages(Action):
+    def name(self) -> Text:
+        return "action_find_multiple_messages"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        logger.info("🕵️‍♂️ TRACING MULTIPLE MESSAGE SOURCE")
+        
+        # Check recent events
+        recent_events = tracker.events[-20:]  # Last 20 events
+        for i, event in enumerate(recent_events):
+            logger.info(f"Event {i}: {event.get('event')} - {event.get('name', 'N/A')}")
+        
+        # Test single message
+        test_response = """Baguio City has established various traffic rules to ensure safety.
+
+1. Enforcement of Traffic Rules
+- The Baguio City Police Office implements regulations
+- Various personnel monitor compliance
+
+2. Non-Motorized Vehicle Regulations  
+- Designated lanes for safety
+- Concessionaires must follow rules
+
+3. Safety Measures for Pedestrians
+- Clear pedestrian lanes
+- Yield to pedestrians
+
+• Follow speed limits and signs
+• Be vigilant in crowded areas
+
+Crucial for safety awareness."""
+
+        logger.info("📤 Sending SINGLE test message")
+        dispatcher.utter_message(text=test_response)
+        logger.info("✅ Single test message sent")
+        
         return []

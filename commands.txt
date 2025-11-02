@@ -1,0 +1,1 @@
+rasa run --cors "*" --response-timeout 10000

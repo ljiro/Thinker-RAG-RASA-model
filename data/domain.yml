@@ -58,13 +58,23 @@ responses:
 actions:
   - action_session_start
   - action_search_knowledge
-  - action_add_document
-  - action_check_knowledge_base
+  - action_search_ordinances
+  - action_ordinance_help
+  - action_check_ordinance_system
   - action_provide_help
   - action_fallback
-  - action_restart_conversation
   - action_show_capabilities
+  - action_add_document
+  - action_check_knowledge_base
   - action_debug_intent
+  - action_debug_response
+  - action_test_rag_response
+  - action_debug_message_flow
+  - action_debug_single_response
+  - action_query_ordinances
+  - action_handle_ordinance_penalty
+  - action_handle_business_permit
+  - action_show_ordinance_stats
 
 session_config:
   session_expiration_time: 60

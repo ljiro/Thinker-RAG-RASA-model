@@ -1,0 +1,28 @@
+[
+  {
+    "tag_name": "entity",
+    "ids_to_tags": {
+      "1": "B-question",
+      "2": "I-question",
+      "3": "L-question",
+      "4": "U-question",
+      "5": "B-violation_type",
+      "6": "I-violation_type",
+      "7": "L-violation_type",
+      "8": "U-violation_type",
+      "0": "O"
+    },
+    "tags_to_ids": {
+      "B-question": 1,
+      "I-question": 2,
+      "L-question": 3,
+      "U-question": 4,
+      "B-violation_type": 5,
+      "I-violation_type": 6,
+      "L-violation_type": 7,
+      "U-violation_type": 8,
+      "O": 0
+    },
+    "num_tags": 9
+  }
+]

@@ -10,6 +10,31 @@ rules:
   - intent: search_knowledge
   - action: action_search_knowledge
 
+- rule: Handle ordinance questions
+  steps:
+  - intent: ask_ordinance
+  - action: action_query_ordinances
+
+- rule: Handle penalty queries
+  steps:
+  - intent: ask_penalty
+  - action: action_handle_ordinance_penalty
+
+- rule: Handle business permit queries
+  steps:
+  - intent: ask_business_permit
+  - action: action_handle_business_permit
+
+- rule: Show ordinance statistics
+  steps:
+  - intent: ask_ordinance_stats
+  - action: action_show_ordinance_stats
+
+- rule: Provide ordinance help
+  steps:
+  - intent: ordinance_help
+  - action: action_ordinance_help
+
 - rule: Handle general questions
   steps:
   - intent: ask_question
@@ -24,11 +49,6 @@ rules:
   steps:
   - intent: bot_challenge
   - action: utter_iamabot
-
-- rule: Greet user
-  steps:
-  - intent: greet
-  - action: utter_greet
 
 - rule: Provide help when asked
   steps:

@@ -36,6 +36,61 @@ nlu:
     - what are traffic rules in baguio
     - tell me traffic rules in baguio city
 
+- intent: ask_ordinance
+  examples: |
+    - search ordinances
+    - look up city laws
+    - find ordinance information
+    - check city regulations
+    - search legal documents
+    - look up municipal code
+    - find city ordinances
+    - check local laws
+    - search baguio ordinances
+    - find legal requirements
+
+- intent: ordinance_help
+  examples: |
+    - how to search ordinances
+    - what ordinances do you have
+    - help with legal search
+    - how to find laws
+    - ordinance search help
+    - how to use ordinance system
+
+- intent: ask_penalty
+  examples: |
+    - what are the penalties for [littering](violation_type)?
+    - how much is the fine for [illegal parking](violation_type)?
+    - what happens if I violate the [noise ordinance](violation_type)?
+    - penalties for [smoking in public](violation_type)
+    - fines for [illegal vending](violation_type)
+    - what's the penalty for [jaywalking](violation_type)?
+    - show me penalty information
+    - what are the fines?
+    - violation penalties
+    - ordinance penalties
+
+- intent: ask_business_permit
+  examples: |
+    - how to get a business permit?
+    - what are the requirements for business registration?
+    - I want to start a business in Baguio
+    - business permit process
+    - requirements for opening a store
+    - business license requirements
+    - how to register a business
+    - commercial permit process
+
+- intent: ask_ordinance_stats
+  examples: |
+    - how many ordinances do you have?
+    - show me ordinance system status
+    - what's in your ordinance database?
+    - ordinance statistics
+    - legal document count
+    - how many laws in your system
+
 - intent: bot_challenge
   examples: |
     - are you a bot?
@@ -50,14 +105,6 @@ nlu:
     - I need information
     - can you help me find something?
     - I want to ask something
-
-- intent: search_knowledge
-  examples: |
-    - what are the [traffic rules](question) in baguio?
-    - [traffic regulations](question) in baguio city
-    - tell me about [baguio traffic laws](question)
-    - [driving rules](question) in baguio
-    - [traffic violations](question) in baguio
 
 - intent: help
   examples: |

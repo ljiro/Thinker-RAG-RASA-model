@@ -3,8 +3,6 @@ version: "3.1"
 stories:
 - story: happy path - greet and search
   steps:
-  - intent: greet
-  - action: utter_greet
   - intent: search_knowledge
   - action: action_search_knowledge
   - intent: thankyou
@@ -14,6 +12,32 @@ stories:
   steps:
   - intent: search_knowledge
   - action: action_search_knowledge
+
+- story: ordinance search
+  steps:
+  - intent: ask_ordinance
+  - action: action_query_ordinances
+  - intent: thankyou
+  - action: utter_thankyou
+
+- story: penalty inquiry
+  steps:
+  - intent: ask_penalty
+  - action: action_handle_ordinance_penalty
+  - intent: thankyou
+  - action: utter_thankyou
+
+- story: business permit inquiry
+  steps:
+  - intent: ask_business_permit
+  - action: action_handle_business_permit
+  - intent: thankyou
+  - action: utter_thankyou
+
+- story: ordinance statistics
+  steps:
+  - intent: ask_ordinance_stats
+  - action: action_show_ordinance_stats
 
 - story: help and search
   steps:
@@ -66,3 +90,12 @@ stories:
   steps:
   - intent: show_capabilities
   - action: action_show_capabilities
+
+- story: mixed ordinance queries
+  steps:
+  - intent: ask_ordinance
+  - action: action_query_ordinances
+  - intent: ask_penalty
+  - action: action_handle_ordinance_penalty
+  - intent: ask_business_permit
+  - action: action_handle_business_permit

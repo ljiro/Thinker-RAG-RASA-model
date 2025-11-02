@@ -1,0 +1,20 @@
+{
+  "0": "add_documents",
+  "1": "ask_business_permit",
+  "2": "ask_ordinance",
+  "3": "ask_ordinance_stats",
+  "4": "ask_penalty",
+  "5": "ask_question",
+  "6": "bot_challenge",
+  "7": "check_knowledge_base",
+  "8": "goodbye",
+  "9": "greet",
+  "10": "help",
+  "11": "nlu_fallback",
+  "12": "ordinance_help",
+  "13": "out_of_scope",
+  "14": "restart",
+  "15": "search_knowledge",
+  "16": "show_capabilities",
+  "17": "thankyou"
+}

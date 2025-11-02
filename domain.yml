@@ -14,6 +14,11 @@ intents:
   - nlu_fallback
   - restart
   - show_capabilities
+  - ask_ordinance
+  - ordinance_help
+  - ask_penalty           # ← ADD THIS
+  - ask_business_permit   # ← ADD THIS  
+  - ask_ordinance_stats   # ← ADD THIS
 
 entities:
   - question
@@ -31,9 +36,6 @@ slots:
     - type: custom
 
 responses:
-  utter_greet:
-  - text: "Hello! I'm your AI assistant with access to a comprehensive knowledge base. How can I help you today?"
-
   utter_goodbye:
   - text: "Goodbye! Feel free to ask if you have more questions."
 
@@ -56,13 +58,21 @@ responses:
   - text: "I'm not sure I understand. You can ask me questions about my knowledge base or say 'help' to see what I can do."
 
 actions:
-  - action_session_start
   - action_search_knowledge
+  - action_search_ordinances
+  - action_ordinance_help
+  - action_check_ordinance_system
   - action_add_document
   - action_check_knowledge_base
   - action_provide_help
   - action_fallback
   - action_show_capabilities
+  - action_debug_intent
+  - action_session_start
+  - action_query_ordinances           # ← ADD THIS
+  - action_handle_ordinance_penalty   # ← ADD THIS
+  - action_handle_business_permit     # ← ADD THIS
+  - action_show_ordinance_stats       # ← ADD THIS
 
 session_config:
   session_expiration_time: 60
