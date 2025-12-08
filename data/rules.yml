@@ -5,50 +5,30 @@ rules:
   steps:
   - action: action_session_start
 
-- rule: Search knowledge base (HIGH PRIORITY)
+- rule: Handle corporate queries
   steps:
-  - intent: search_knowledge
-  - action: action_search_knowledge
+  - intent: corporate_query
+  - action: action_corporate_query
 
-- rule: Handle ordinance questions
+- rule: Handle products queries
   steps:
-  - intent: ask_ordinance
-  - action: action_query_ordinances
+  - intent: ask_products
+  - action: action_handle_products
 
-- rule: Handle penalty queries
+- rule: Handle awards queries
   steps:
-  - intent: ask_penalty
-  - action: action_handle_ordinance_penalty
+  - intent: ask_awards
+  - action: action_handle_awards
 
-- rule: Handle business permit queries
+- rule: Handle contact queries
   steps:
-  - intent: ask_business_permit
-  - action: action_handle_business_permit
+  - intent: ask_contact
+  - action: action_handle_contact
 
-- rule: Show ordinance statistics
+- rule: Handle founders queries
   steps:
-  - intent: ask_ordinance_stats
-  - action: action_show_ordinance_stats
-
-- rule: Provide ordinance help
-  steps:
-  - intent: ordinance_help
-  - action: action_ordinance_help
-
-- rule: Handle general questions
-  steps:
-  - intent: ask_question
-  - action: action_search_knowledge
-
-- rule: Say goodbye anytime the user says goodbye
-  steps:
-  - intent: goodbye
-  - action: utter_goodbye
-
-- rule: Say 'I am a bot' anytime the user challenges
-  steps:
-  - intent: bot_challenge
-  - action: utter_iamabot
+  - intent: ask_founders
+  - action: action_handle_founders
 
 - rule: Provide help when asked
   steps:
@@ -64,6 +44,16 @@ rules:
   steps:
   - intent: add_documents
   - action: action_add_document
+
+- rule: Say goodbye anytime the user says goodbye
+  steps:
+  - intent: goodbye
+  - action: utter_goodbye
+
+- rule: Say 'I am a bot' anytime the user challenges
+  steps:
+  - intent: bot_challenge
+  - action: utter_iamabot
 
 - rule: Handle thank you
   steps:

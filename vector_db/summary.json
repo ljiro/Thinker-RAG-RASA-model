@@ -1,0 +1,8 @@
+{
+  "company": "Gift of Grace Food Manufacturing Corporation (GoGFMC)",
+  "total_chunks": 126,
+  "document_type": "corporate_report",
+  "processed_date": "2025-12-08T17:42:02.752840",
+  "embedding_model": "all-MiniLM-L6-v2",
+  "embedding_dimension": 384
+}

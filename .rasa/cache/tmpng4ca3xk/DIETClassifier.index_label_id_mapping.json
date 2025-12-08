@@ -1,0 +1,18 @@
+{
+  "0": "add_documents",
+  "1": "ask_awards",
+  "2": "ask_contact",
+  "3": "ask_founders",
+  "4": "ask_products",
+  "5": "bot_challenge",
+  "6": "check_knowledge_base",
+  "7": "corporate_query",
+  "8": "goodbye",
+  "9": "greet",
+  "10": "help",
+  "11": "nlu_fallback",
+  "12": "out_of_scope",
+  "13": "restart",
+  "14": "show_capabilities",
+  "15": "thankyou"
+}

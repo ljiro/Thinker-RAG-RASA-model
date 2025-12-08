@@ -1,57 +1,54 @@
 version: "3.1"
 
 stories:
-- story: happy path - greet and search
+- story: corporate information request
   steps:
-  - intent: search_knowledge
-  - action: action_search_knowledge
+  - intent: corporate_query
+  - action: action_corporate_query
   - intent: thankyou
   - action: utter_thankyou
 
-- story: direct knowledge search
+- story: products inquiry
   steps:
-  - intent: search_knowledge
-  - action: action_search_knowledge
-
-- story: ordinance search
-  steps:
-  - intent: ask_ordinance
-  - action: action_query_ordinances
+  - intent: ask_products
+  - action: action_handle_products
   - intent: thankyou
   - action: utter_thankyou
 
-- story: penalty inquiry
+- story: awards inquiry
   steps:
-  - intent: ask_penalty
-  - action: action_handle_ordinance_penalty
+  - intent: ask_awards
+  - action: action_handle_awards
   - intent: thankyou
   - action: utter_thankyou
 
-- story: business permit inquiry
+- story: contact inquiry
   steps:
-  - intent: ask_business_permit
-  - action: action_handle_business_permit
+  - intent: ask_contact
+  - action: action_handle_contact
   - intent: thankyou
   - action: utter_thankyou
 
-- story: ordinance statistics
+- story: founders inquiry
   steps:
-  - intent: ask_ordinance_stats
-  - action: action_show_ordinance_stats
+  - intent: ask_founders
+  - action: action_handle_founders
+  - intent: thankyou
+  - action: utter_thankyou
 
 - story: help and search
   steps:
   - intent: help
   - action: action_provide_help
-  - intent: search_knowledge
-  - action: action_search_knowledge
+  - intent: corporate_query
+  - action: action_corporate_query
 
 - story: check knowledge base and search
   steps:
   - intent: check_knowledge_base
   - action: action_check_knowledge_base
-  - intent: search_knowledge
-  - action: action_search_knowledge
+  - intent: corporate_query
+  - action: action_corporate_query
 
 - story: add documents inquiry
   steps:
@@ -69,33 +66,33 @@ stories:
   steps:
   - intent: out_of_scope
   - action: utter_out_of_scope
-  - intent: search_knowledge
-  - action: action_search_knowledge
+  - intent: corporate_query
+  - action: action_corporate_query
 
 - story: bot challenge response
   steps:
   - intent: bot_challenge
   - action: utter_iamabot
-  - intent: search_knowledge
-  - action: action_search_knowledge
+  - intent: corporate_query
+  - action: action_corporate_query
 
 - story: fallback recovery
   steps:
   - intent: nlu_fallback
   - action: action_fallback
-  - intent: search_knowledge
-  - action: action_search_knowledge
+  - intent: corporate_query
+  - action: action_corporate_query
 
 - story: show capabilities
   steps:
   - intent: show_capabilities
   - action: action_show_capabilities
 
-- story: mixed ordinance queries
+- story: mixed corporate queries
   steps:
-  - intent: ask_ordinance
-  - action: action_query_ordinances
-  - intent: ask_penalty
-  - action: action_handle_ordinance_penalty
-  - intent: ask_business_permit
-  - action: action_handle_business_permit
+  - intent: corporate_query
+  - action: action_corporate_query
+  - intent: ask_products
+  - action: action_handle_products
+  - intent: ask_contact
+  - action: action_handle_contact

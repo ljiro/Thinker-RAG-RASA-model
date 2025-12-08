@@ -19,77 +19,57 @@ nlu:
     - bye
     - bye bye
 
-- intent: search_knowledge
+- intent: corporate_query
   examples: |
-    - what are the [traffic rules](question) in baguio?
-    - [traffic rules in baguio](question)
-    - tell me about [baguio traffic regulations](question)
-    - [baguio city traffic laws](question)
-    - what are the [driving rules in baguio](question)?
-    - [traffic violations in baguio](question)
-    - [baguio traffic](question)
-    - [road rules baguio](question)
-    - [transportation rules baguio city](question)
-    - [baguio city ordinances traffic](question)
-    - traffic rules in baguio
-    - baguio traffic rules
-    - what are traffic rules in baguio
-    - tell me traffic rules in baguio city
+    - tell me about gift of grace
+    - what is gift of grace food manufacturing
+    - who are the founders of gift of grace
+    - what products does gift of grace make
+    - gift of grace awards
+    - gift of grace location
+    - gift of grace contact information
+    - kimchi gift company
+    - tofu gift manufacturer
+    - tell me about gift of grace food manufacturing corporation
+    - information about gogfmc
+    - what does gift of grace do
+    - tell me about the company gift of grace
+    - gift of grace food manufacturing details
 
-- intent: ask_ordinance
+- intent: ask_products
   examples: |
-    - search ordinances
-    - look up city laws
-    - find ordinance information
-    - check city regulations
-    - search legal documents
-    - look up municipal code
-    - find city ordinances
-    - check local laws
-    - search baguio ordinances
-    - find legal requirements
+    - what products do they make
+    - show me their products
+    - what food items does gift of grace produce
+    - tell me about kimchi gift
+    - information about tofu gift
+    - what is rice coffee with moringa
+    - product portfolio of gift of grace
 
-- intent: ordinance_help
+- intent: ask_awards
   examples: |
-    - how to search ordinances
-    - what ordinances do you have
-    - help with legal search
-    - how to find laws
-    - ordinance search help
-    - how to use ordinance system
+    - what awards has gift of grace won
+    - show me their achievements
+    - what recognition has gift of grace received
+    - tell me about their industry awards
+    - gift of grace achievements
 
-- intent: ask_penalty
+- intent: ask_contact
   examples: |
-    - what are the penalties for [littering](violation_type)?
-    - how much is the fine for [illegal parking](violation_type)?
-    - what happens if I violate the [noise ordinance](violation_type)?
-    - penalties for [smoking in public](violation_type)
-    - fines for [illegal vending](violation_type)
-    - what's the penalty for [jaywalking](violation_type)?
-    - show me penalty information
-    - what are the fines?
-    - violation penalties
-    - ordinance penalties
+    - how can I contact gift of grace
+    - what is their phone number
+    - gift of grace email address
+    - where is gift of grace located
+    - what is their address
+    - gift of grace contact details
 
-- intent: ask_business_permit
+- intent: ask_founders
   examples: |
-    - how to get a business permit?
-    - what are the requirements for business registration?
-    - I want to start a business in Baguio
-    - business permit process
-    - requirements for opening a store
-    - business license requirements
-    - how to register a business
-    - commercial permit process
-
-- intent: ask_ordinance_stats
-  examples: |
-    - how many ordinances do you have?
-    - show me ordinance system status
-    - what's in your ordinance database?
-    - ordinance statistics
-    - legal document count
-    - how many laws in your system
+    - who founded gift of grace
+    - who are the founders
+    - tell me about satur cadsi
+    - who is janice cadsi
+    - gift of grace founders information
 
 - intent: bot_challenge
   examples: |
@@ -97,14 +77,6 @@ nlu:
     - are you a human?
     - am I talking to a bot?
     - am I talking to a human?
-
-- intent: ask_question
-  examples: |
-    - I have a question
-    - can you answer something?
-    - I need information
-    - can you help me find something?
-    - I want to ask something
 
 - intent: help
   examples: |
